@@ -1,0 +1,22 @@
+################################
+# Server parameters
+################################
+
+server_type: "wsgiref"
+host: "127.0.0.1"
+port: 8080
+
+################################
+# Payout parameters
+################################
+
+rate_seconds: 20
+koin_payout: 3000000000
+k: .5
+
+################################
+# Blockchain parameters
+################################
+
+rpc_endpoint: ""
+wallet_address: ""
