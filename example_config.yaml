@@ -19,4 +19,13 @@ k: .5
 ################################
 
 rpc_endpoint: ""
+
+################################
+# Transaction parameters
+################################
+
 wallet_address: ""
+private_key_file: "/path/to/private.key"
+signing_tool_bin: "/path/to/transaction_signing_tool"
+contract_id: ""
+entry_point: 0
