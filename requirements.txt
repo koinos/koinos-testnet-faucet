@@ -1,3 +1,7 @@
 bottle==0.12.19
 pkg-resources==0.0.0
 PyYAML==5.4.1
+base58==2.1.0
+bottle==0.12.19
+pkg-resources==0.0.0
+PyYAML==5.4.1
