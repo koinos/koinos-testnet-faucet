@@ -1,6 +1,7 @@
 import re
 import dbm
 import json
+import requests
 import argparse
 import subprocess
 from datetime import datetime
@@ -15,10 +16,13 @@ app = default_app()
 re_address = re.compile("0x[0-9a-fA-F]{40}$")
 
 class Blockchain:
+    request_id = 0
+
     def __init__(self):
         self.balance = 0
         self.k = .00001
         self.update_balance()
+        print("Wallet address balance: " + str(self.balance))
         return
 
     def transfer(self, address, amount):
@@ -29,8 +33,21 @@ class Blockchain:
         return
 
     def update_balance(self):
-        # TODO: Fetch actual balance from chain
-        self.balance = 10000000000 #(1000.0000000)
+        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+        payload = {
+            "method": "chain.read_contract",
+            "params": {
+                "contract_id" : app.config["contract_id"],
+                "entry_point" : app.config["entry_point"],
+                "args"        : args
+            },
+            "jsonrpc": "2.0",
+            "id": Blockchain.request_id,
+        }
+        Blockchain.request_id += 1
+        response = requests.post(app.config["rpc_endpoint"], json=payload).json()
+        result = response["result"]["result"][1:]
+        self.balance = int.from_bytes(base58.b58decode(result), "big")
         return
 
 def create_transaction(to_address, amount):
@@ -51,10 +68,10 @@ def to_base58(b):
     s = base58.b58encode(b)
     return "z" + "".join(chr(x) for x in s)
 
-# address in form 0x...
 def address_to_bytes(address):
-    print(address)
-    return b'\x14' + bytes.fromhex(address[2:])
+    b = bytes(address, 'ascii')
+    length = len(b)
+    return length.to_bytes(1, "big") + b
 
 def check_key(name, password):
     return True # TODO: Add authentication
@@ -72,7 +89,7 @@ def check_identifier(id):
     if id not in app.db:
         update_timestamp(id)
         return (True, None)
-    
+
     id_time = fetch_timestamp(id)
     dt = datetime.now() - id_time
     dseconds = dt.total_seconds()
@@ -142,7 +159,7 @@ def main():
     app.chain = Blockchain()
     with dbm.open(db_fname, "c") as db:
         app.db = db
-        run(app, server=app.config["server_type"], 
+        run(app, server=app.config["server_type"],
             host=app.config["host"], port=app.config["port"])
     return
 

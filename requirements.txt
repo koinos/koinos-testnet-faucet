@@ -1,7 +1,9 @@
-bottle==0.12.19
-pkg-resources==0.0.0
-PyYAML==5.4.1
 base58==2.1.0
 bottle==0.12.19
-pkg-resources==0.0.0
+certifi==2021.5.30
+chardet==4.0.0
+idna==2.10
+json-rpc==1.13.0
 PyYAML==5.4.1
+requests==2.25.1
+urllib3==1.26.5
