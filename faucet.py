@@ -25,28 +25,44 @@ class Blockchain:
         print("Wallet address balance: " + str(self.balance))
         return
 
-    def transfer(self, address, amount):
-        transaction = create_transaction(address, amount)
-        call = [app.config["signing_tool_bin"], "-w", "-k", app.config["private_key_file"]]
-        rpc_call = subprocess.check_output(call)
-        # TODO: Make actual rpc call here
-        return
-
-    def update_balance(self):
-        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+    def rpc_call(self, call, params):
         payload = {
-            "method": "chain.read_contract",
-            "params": {
-                "contract_id" : app.config["contract_id"],
-                "entry_point" : app.config["entry_point"],
-                "args"        : args
-            },
+            "method": call,
+            "params": params,
             "jsonrpc": "2.0",
             "id": Blockchain.request_id,
         }
+        print("rpc payload: " + json.dumps(payload))
         Blockchain.request_id += 1
         response = requests.post(app.config["rpc_endpoint"], json=payload).json()
-        result = response["result"]["result"][1:]
+        print("rpc response: " + json.dumps(response))
+        return response["result"]
+
+    def transfer(self, address, amount):
+        transaction = create_transaction(address, amount)
+        call = [app.config["signing_tool_bin"], "-p", app.config["private_key_file"]]
+        trx_str = json.dumps(transaction)
+        print("Signing transaction: " + trx_str)
+        rpc_call = subprocess.check_output(call, input=trx_str, encoding='ascii')
+        print("sign trx result: " + rpc_call)
+        result = self.rpc_call(
+            call = "chain.submit_transaction",
+            params = {
+                "transaction": json.loads(rpc_call)
+            }
+        )
+        return result == {}
+
+    def update_balance(self):
+        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+        result = self.rpc_call(
+            call = "chain.read_contract",
+            params = {
+                "contract_id" : app.config["contract_id"],
+                "entry_point" : app.config["balance_of_entry_point"],
+                "args"        : args
+            }
+        )["result"][1:]
         self.balance = int.from_bytes(base58.b58decode(result), "big")
         return
 
@@ -54,8 +70,8 @@ def create_transaction(to_address, amount):
     args = create_args(app.config["wallet_address"], to_address, amount)
     transaction = {'id': 'z11', 'active_data': {'resource_limit': 0,
     'nonce': 0, 'operations': [{'type': 'koinos::protocol::call_contract_operation',
-    'value': {'contract_id': app.config["contract_id"], 'entry_point': app.config["entry_point"], 'args': args, 'extensions': {}}}]},
-    'passive_data': {}, 'signature_data': ''}
+    'value': {'contract_id': app.config["contract_id"], 'entry_point': app.config["transfer_entry_point"], 'args': args, 'extensions': {}}}]},
+    'passive_data': {}, 'signature_data': 'z11'}
     return transaction
 
 def create_args(from_address, to_address, amount):
