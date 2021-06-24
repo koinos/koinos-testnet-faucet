@@ -32,19 +32,15 @@ class Blockchain:
             "jsonrpc": "2.0",
             "id": Blockchain.request_id,
         }
-        print("rpc payload: " + json.dumps(payload))
         Blockchain.request_id += 1
         response = requests.post(app.config["rpc_endpoint"], json=payload).json()
-        print("rpc response: " + json.dumps(response))
         return response["result"]
 
     def transfer(self, address, amount):
         transaction = create_transaction(address, amount)
         call = [app.config["signing_tool_bin"], "-p", app.config["private_key_file"]]
         trx_str = json.dumps(transaction)
-        print("Signing transaction: " + trx_str)
         rpc_call = subprocess.check_output(call, input=trx_str, encoding='ascii')
-        print("sign trx result: " + rpc_call)
         result = self.rpc_call(
             call = "chain.submit_transaction",
             params = {
@@ -66,10 +62,20 @@ class Blockchain:
         self.balance = int.from_bytes(base58.b58decode(result), "big")
         return
 
+    def get_nonce(self):
+        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+        result = self.rpc_call(
+            call = "chain.get_account_nonce",
+            params = {
+                "account" : args
+            }
+        )["nonce"]
+        return int(result)
+
 def create_transaction(to_address, amount):
     args = create_args(app.config["wallet_address"], to_address, amount)
     transaction = {'id': 'z11', 'active_data': {'resource_limit': 0,
-    'nonce': 0, 'operations': [{'type': 'koinos::protocol::call_contract_operation',
+    'nonce': app.chain.get_nonce(), 'operations': [{'type': 'koinos::protocol::call_contract_operation',
     'value': {'contract_id': app.config["contract_id"], 'entry_point': app.config["transfer_entry_point"], 'args': args, 'extensions': {}}}]},
     'passive_data': {}, 'signature_data': 'z11'}
     return transaction
