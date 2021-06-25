@@ -28,4 +28,5 @@ wallet_address: ""
 private_key_file: "/path/to/private.key"
 signing_tool_bin: "/path/to/transaction_signing_tool"
 contract_id: ""
-entry_point: 0
+balance_of_entry_point: 0x15619248
+transfer_entry_point: 0x62efa292
