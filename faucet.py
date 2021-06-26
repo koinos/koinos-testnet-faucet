@@ -8,12 +8,12 @@ from datetime import datetime
 
 import yaml
 import base58
+import base64
 
 from bottle import run, post
 from bottle import default_app, request, response
 
 app = default_app()
-re_address = re.compile("0x[0-9a-fA-F]{40}$")
 
 class Blockchain:
     request_id = 0
@@ -40,11 +40,12 @@ class Blockchain:
         transaction = create_transaction(address, amount)
         call = [app.config["signing_tool_bin"], "-p", app.config["private_key_file"]]
         trx_str = json.dumps(transaction)
-        rpc_call = subprocess.check_output(call, input=trx_str, encoding='ascii')
+        signed_trx = subprocess.check_output(call, input=trx_str, encoding='ascii')
+        print("submitting transfer transaction: ", signed_trx)
         result = self.rpc_call(
             call = "chain.submit_transaction",
             params = {
-                "transaction": json.loads(rpc_call)
+                "transaction": json.loads(signed_trx)
             }
         )
         return result == {}
@@ -59,11 +60,11 @@ class Blockchain:
                 "args"        : args
             }
         )["result"][1:]
-        self.balance = int.from_bytes(base58.b58decode(result), "big")
+        self.balance = int.from_bytes(base64.b64decode(result), "big")
         return
 
     def get_nonce(self):
-        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+        args = to_base58(app.config["wallet_address"])
         result = self.rpc_call(
             call = "chain.get_account_nonce",
             params = {
@@ -144,7 +145,9 @@ def request_koin():
         return json.dumps({"message": "Input error."})
 
     # Ensure the address has a valid format
-    if re_address.match(address) is None:
+    try:
+        base58.b58decode(address)
+    except ValueError:
         response.status = 400
         return json.dumps({"message": "Invalid address format."})
 
