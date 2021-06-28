@@ -20,7 +20,6 @@ class Blockchain:
 
     def __init__(self):
         self.balance = 0
-        self.k = .00001
         self.update_balance()
         print("Wallet address balance: " + str(self.balance))
         return
@@ -159,6 +158,7 @@ def request_koin():
         return json.dumps({"message": id_result[1]})
 
     # Execute the payout
+    app.chain.update_balance()
     amount = pay_address(address)
     s_amount = "{:7f}".format(amount / 10000000.0)
 
