@@ -148,7 +148,7 @@ def balance():
     
     # Execute the payout
     balance = app.chain.update_balance(address)
-    s_balance = "{:7f}".format(balance / 10000000.0)
+    s_balance = "{:8f}".format(balance / 100000000.0)
 
     response.status = 202
     response.headers['Content-Type'] = 'application/json'
@@ -186,7 +186,7 @@ def request_koin():
     # Execute the payout
     balance = app.chain.update_balance(app.config["wallet_address"])
     amount = pay_address(address, balance)
-    s_amount = "{:7f}".format(amount / 10000000.0)
+    s_amount = "{:8f}".format(amount / 100000000.0)
 
     response.status = 202
     response.headers['Content-Type'] = 'application/json'
