@@ -19,9 +19,8 @@ class Blockchain:
     request_id = 0
 
     def __init__(self):
-        self.balance = 0
-        self.update_balance()
-        print("Wallet address balance: " + str(self.balance))
+        balance = self.update_balance(app.config["wallet_address"])
+        print("Wallet address balance: " + str(balance))
         return
 
     def rpc_call(self, call, params):
@@ -49,8 +48,8 @@ class Blockchain:
         )
         return result == {}
 
-    def update_balance(self):
-        args = to_base58(address_to_bytes(app.config["wallet_address"]))
+    def update_balance(self, address):
+        args = to_base58(address_to_bytes(address))
         result = self.rpc_call(
             call = "chain.read_contract",
             params = {
@@ -59,8 +58,7 @@ class Blockchain:
                 "args"        : args
             }
         )["result"][1:]
-        self.balance = int.from_bytes(base64.b64decode(result), "big")
-        return
+        return int.from_bytes(base64.b64decode(result), "big")
 
     def get_nonce(self):
         args = to_base58(app.config["wallet_address"])
@@ -122,10 +120,9 @@ def check_identifier(id):
     return (True, None)
 
 # Calculate the payout amount, submit the transaction
-def pay_address(address):
-    amount = min(int(app.chain.balance*app.config["k"]), app.config["koin_payout"])
+def pay_address(address, balance):
+    amount = min(int(balance*app.config["k"]), app.config["koin_payout"])
     app.chain.transfer(address, amount)
-    app.chain.balance -= amount
     return amount
 
 @post('/request_koin')
@@ -158,8 +155,8 @@ def request_koin():
         return json.dumps({"message": id_result[1]})
 
     # Execute the payout
-    app.chain.update_balance()
-    amount = pay_address(address)
+    balance = app.chain.update_balance(app.config["wallet_address"])
+    amount = pay_address(address, balance)
     s_amount = "{:7f}".format(amount / 10000000.0)
 
     response.status = 202
