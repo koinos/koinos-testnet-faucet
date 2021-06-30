@@ -74,7 +74,7 @@ class Blockchain:
 
 def create_transaction(to_address, amount):
     args = create_args(app.config["wallet_address"], to_address, amount)
-    transaction = {'id': 'z11', 'active_data': {'resource_limit': 0,
+    transaction = {'id': 'z11', 'active_data': {'resource_limit': app.config["resource_limit"],
     'nonce': app.chain.get_nonce(), 'operations': [{'type': 'koinos::protocol::call_contract_operation',
     'value': {'contract_id': app.config["contract_id"], 'entry_point': app.config["transfer_entry_point"], 'args': args, 'extensions': {}}}]},
     'passive_data': {}, 'signature_data': 'z11'}
@@ -117,7 +117,7 @@ def check_identifier(id):
     dseconds = dt.total_seconds()
     if dseconds < app.config["rate_seconds"]:
         difference = max(int(app.config["rate_seconds"] - dseconds), 1)
-        return (False, f"Cannot receive funds for {difference} more seconds.")
+        return (False, f"Cannot receive KOIN for {(difference/60.0):.1f} more minutes.")
     update_timestamp(id)
     return (True, None)
 
@@ -176,13 +176,8 @@ def main():
     with open(args.config, "r") as f:
         app.config = yaml.load(f.read(), Loader=yaml.SafeLoader)
 
-    # Sanitize database filename since dbm expects it without extension for some reason
-    db_fname = args.database
-    if args.database.endswith(".db"):
-        db_fname = db_fname[:-3]
-
     app.chain = Blockchain()
-    with dbm.open(db_fname, "c") as db:
+    with dbm.open(args.database, "c") as db:
         app.db = db
         run(app, server=app.config["server_type"],
             host=app.config["host"], port=app.config["port"])

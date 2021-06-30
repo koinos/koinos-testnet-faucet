@@ -4,15 +4,15 @@
 
 server_type: "wsgiref"
 host: "127.0.0.1"
-port: 8080
+port: 8081
 
 ################################
 # Payout parameters
 ################################
 
-rate_seconds: 20
-koin_payout: 3000000000
-k: .5
+rate_seconds: 43200
+koin_payout: 100000000
+k: .2
 
 ################################
 # Blockchain parameters
@@ -30,3 +30,4 @@ signing_tool_bin: "/path/to/transaction_signing_tool"
 contract_id: ""
 balance_of_entry_point: 0x15619248
 transfer_entry_point: 0x62efa292
+resource_limit: 1000000
