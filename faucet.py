@@ -117,7 +117,7 @@ def check_identifier(id):
     dseconds = dt.total_seconds()
     if dseconds < app.config["rate_seconds"]:
         difference = max(int(app.config["rate_seconds"] - dseconds), 1)
-        return (False, f"Cannot receive funds for {(difference/60.0):.1f} more minutes.")
+        return (False, f"Cannot receive KOIN for {(difference/60.0):.1f} more minutes.")
     update_timestamp(id)
     return (True, None)
 
