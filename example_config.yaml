@@ -30,3 +30,4 @@ signing_tool_bin: "/path/to/transaction_signing_tool"
 contract_id: ""
 balance_of_entry_point: 0x15619248
 transfer_entry_point: 0x62efa292
+resource_limit: 1000000
