@@ -125,6 +125,35 @@ def pay_address(address, balance):
     app.chain.transfer(address, amount)
     return amount
 
+@post('/balance')
+def balance():
+    data = request.json
+    try:
+        if data is None: raise ValueError
+        try:
+            address = data['address']
+        except(TypeError, KeyError):
+            raise ValueError
+    except ValueError:
+        response.headers['Content-Type'] = 'application/json'
+        response.status = 400
+        return json.dumps({"message": "Input error."})
+
+    # Ensure the address has a valid format
+    try:
+        base58.b58decode(address)
+    except ValueError:
+        response.status = 400
+        return json.dumps({"message": "Invalid address format."})
+    
+    # Execute the payout
+    balance = app.chain.update_balance(address)
+    s_balance = "{:7f}".format(balance / 10000000.0)
+
+    response.status = 202
+    response.headers['Content-Type'] = 'application/json'
+    return json.dumps({"message": f"Balance at address {address} is {s_balance} KOIN."})
+
 @post('/request_koin')
 def request_koin():
     data = request.json
