@@ -10,6 +10,7 @@ port: 8081
 # Payout parameters
 ################################
 
+token_symbol: "tKOIN"
 rate_seconds: 43200
 koin_payout: 1000000000
 k: .2
