@@ -115,7 +115,7 @@ def check_identifier(id):
     dseconds = dt.total_seconds()
     if dseconds < app.config["rate_seconds"]:
         difference = max(int(app.config["rate_seconds"] - dseconds), 1)
-        return (False, f"Cannot receive {app.config["token_symbol"]} for {(difference/60.0):.1f} more minutes.")
+        return (False, f"Cannot receive {app.config['token_symbol']} for {(difference/60.0):.1f} more minutes.")
     update_timestamp(id)
     return (True, None)
 
@@ -152,7 +152,7 @@ def balance():
 
     response.status = 202
     response.headers['Content-Type'] = 'application/json'
-    return json.dumps({"message": f"Balance at address {address} is {s_balance} {app.config["token_symbol"]}."})
+    return json.dumps({"message": f"Balance at address {address} is {s_balance} {app.config['token_symbol']}."})
 
 @post('/request_koin')
 def request_koin():
@@ -190,7 +190,7 @@ def request_koin():
 
     response.status = 202
     response.headers['Content-Type'] = 'application/json'
-    return json.dumps({"message": f"Transferring {s_amount} {app.config["token_symbol"]} to address {address}."})
+    return json.dumps({"message": f"Transferring {s_amount} {app.config['token_symbol']} to address {address}."})
 
 def main():
     parser = argparse.ArgumentParser(description='Koinos testnet faucet server.')
