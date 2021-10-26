@@ -25,10 +25,7 @@ rpc_endpoint: ""
 # Transaction parameters
 ################################
 
+wallet_file: "/path/to/wallet-file"
+wallet_bin: "/path/to/koinos-cli-wallet"
 wallet_address: ""
-private_key_file: "/path/to/private.key"
-signing_tool_bin: "/path/to/transaction_signing_tool"
-contract_id: ""
-balance_of_entry_point: 0x15619248
-transfer_entry_point: 0x62efa292
-resource_limit: 1000000
+wallet_password: ""

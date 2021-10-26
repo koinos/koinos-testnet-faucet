@@ -5,6 +5,7 @@ import requests
 import argparse
 import subprocess
 from datetime import datetime
+from decimal import *
 
 import yaml
 import base58
@@ -19,79 +20,30 @@ class Blockchain:
     request_id = 0
 
     def __init__(self):
-        balance = self.update_balance(app.config["wallet_address"])
-        print("Wallet address balance: " + str(balance))
+        self.balance_re = re.compile(f"((\d+(\.\d*)?)|(\.\d+)) {app.config['token_symbol']}")
         return
 
-    def rpc_call(self, call, params):
-        payload = {
-            "method": call,
-            "params": params,
-            "jsonrpc": "2.0",
-            "id": Blockchain.request_id,
-        }
-        Blockchain.request_id += 1
-        response = requests.post(app.config["rpc_endpoint"], json=payload).json()
-        return response["result"]
+    def invoke_wallet(self, command, wallet=False):
+        call = [app.config["wallet_bin"], "--rpc", app.config["rpc_endpoint"]]
+        if wallet:
+            call.extend(["-x", f"open {app.config['wallet_file']} {app.config['wallet_password']}"])
+        call.extend(["-x", command])
+        output = subprocess.check_output(call, encoding='ascii')
+        print(output)
+        return output
 
     def transfer(self, address, amount):
-        transaction = create_transaction(address, amount)
-        call = [app.config["signing_tool_bin"], "-p", app.config["private_key_file"]]
-        trx_str = json.dumps(transaction)
-        signed_trx = subprocess.check_output(call, input=trx_str, encoding='ascii')
-        print("submitting transfer transaction: ", signed_trx)
-        result = self.rpc_call(
-            call = "chain.submit_transaction",
-            params = {
-                "transaction": json.loads(signed_trx)
-            }
-        )
-        return result == {}
+        d_amount = satoshi_to_decimal(amount, 8)
+        self.invoke_wallet(f"transfer {d_amount} {address}", wallet=True)
+        return
 
-    def update_balance(self, address):
-        args = to_base58(address_to_bytes(address))
-        result = self.rpc_call(
-            call = "chain.read_contract",
-            params = {
-                "contract_id" : app.config["contract_id"],
-                "entry_point" : app.config["balance_of_entry_point"],
-                "args"        : args
-            }
-        )["result"][1:]
-        return int.from_bytes(base64.b64decode(result), "big")
-
-    def get_nonce(self):
-        args = to_base58(app.config["wallet_address"])
-        result = self.rpc_call(
-            call = "chain.get_account_nonce",
-            params = {
-                "account" : args
-            }
-        )["nonce"]
-        return int(result)
-
-def create_transaction(to_address, amount):
-    args = create_args(app.config["wallet_address"], to_address, amount)
-    transaction = {'id': 'z11', 'active_data': {'resource_limit': app.config["resource_limit"],
-    'nonce': app.chain.get_nonce(), 'operations': [{'type': 'koinos::protocol::call_contract_operation',
-    'value': {'contract_id': app.config["contract_id"], 'entry_point': app.config["transfer_entry_point"], 'args': args, 'extensions': {}}}]},
-    'passive_data': {}, 'signature_data': 'z11'}
-    return transaction
-
-def create_args(from_address, to_address, amount):
-    from_bytes = address_to_bytes(from_address)
-    to_bytes = address_to_bytes(to_address)
-    amt_bytes = amount.to_bytes(8, 'big')
-    return to_base58(from_bytes + to_bytes + amt_bytes)
-
-def to_base58(b):
-    s = base58.b58encode(b)
-    return "z" + "".join(chr(x) for x in s)
-
-def address_to_bytes(address):
-    b = bytes(address, 'ascii')
-    length = len(b)
-    return length.to_bytes(1, "big") + b
+    def get_balance(self, address):
+        balance_return = self.invoke_wallet(f"balance {address}", wallet=False)
+        m = self.balance_re.search(balance_return)
+        if m:
+           d = Decimal(m.group(1))
+           return decimal_to_satoshi(d, 8)
+        return 0
 
 def check_key(name, password):
     return True # TODO: Add authentication
@@ -125,6 +77,12 @@ def pay_address(address, balance):
     app.chain.transfer(address, amount)
     return amount
 
+def decimal_to_satoshi(balance, precision):
+    return int(balance * (10 ** precision))
+
+def satoshi_to_decimal(balance, precision):
+    return balance / (10 ** precision)
+
 @post('/balance')
 def balance():
     data = request.json
@@ -147,7 +105,7 @@ def balance():
         return json.dumps({"message": "Invalid address format."})
     
     # Execute the payout
-    balance = app.chain.update_balance(address)
+    balance = app.chain.get_balance(address)
     s_balance = "{:8f}".format(balance / 100000000.0)
 
     response.status = 202
@@ -184,7 +142,7 @@ def request_koin():
         return json.dumps({"message": id_result[1]})
 
     # Execute the payout
-    balance = app.chain.update_balance(app.config["wallet_address"])
+    balance = app.chain.get_balance(app.config["wallet_address"])
     amount = pay_address(address, balance)
     s_amount = "{:8f}".format(amount / 100000000.0)
 
