@@ -11,6 +11,7 @@ port: 8081
 ################################
 
 token_symbol: "tKOIN"
+token_address: "1EdLyQ67LW6HVU1dWoceP4firtyz77e37Y"
 rate_seconds: 43200
 koin_payout: 1000000000
 k: .2
