@@ -27,6 +27,7 @@ class Blockchain:
         call = [app.config["wallet_bin"], "--rpc", app.config["rpc_endpoint"]]
         if wallet:
             call.extend(["-x", f"open {app.config['wallet_file']} {app.config['wallet_password']}"])
+        call.extend(["-x", f"register_token tkoin {app.config['token_address']}"])
         call.extend(["-x", command])
         output = subprocess.check_output(call, encoding='ascii')
         print(output)
@@ -34,11 +35,11 @@ class Blockchain:
 
     def transfer(self, address, amount):
         d_amount = satoshi_to_decimal(amount, 8)
-        self.invoke_wallet(f"transfer {d_amount} {address}", wallet=True)
+        self.invoke_wallet(f"tkoin.transfer {address} {d_amount}", wallet=True)
         return
 
     def get_balance(self, address):
-        balance_return = self.invoke_wallet(f"balance {address}", wallet=False)
+        balance_return = self.invoke_wallet(f"tkoin.balance_of {address}", wallet=False)
         m = self.balance_re.search(balance_return)
         if m:
            d = Decimal(m.group(1))
